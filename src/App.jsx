@@ -39,7 +39,6 @@ function App() {
       return;
     }
 
-    // Piira teksti kuni 500 tähemärgi
     const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
 
     try {
@@ -86,6 +85,11 @@ function App() {
 
   const selectedMovie = selectedIndex !== null ? movies[selectedIndex] : null;
 
+  // Funktsioon nupu hover efektiks
+  const buttonHoverStyle = (e, enter) => {
+    e.currentTarget.style.filter = enter ? "brightness(0.9)" : "brightness(1)";
+  };
+
   return (
     <div style={{ fontFamily: "Arial, sans-serif", padding: "20px" }}>
       <h2>
@@ -104,7 +108,10 @@ function App() {
             padding: "5px 10px",
             cursor: isSaytEnabled ? "not-allowed" : "pointer",
             opacity: isSaytEnabled ? 0.5 : 1,
+            transition: "filter 0.2s ease",
           }}
+          onMouseEnter={(e) => !isSaytEnabled && buttonHoverStyle(e, true)}
+          onMouseLeave={(e) => buttonHoverStyle(e, false)}
         >
           Otsi
         </button>
@@ -114,7 +121,10 @@ function App() {
             marginLeft: "10px",
             padding: "5px 10px",
             backgroundColor: isSaytEnabled ? "#f88" : "#8f8",
+            transition: "filter 0.2s ease",
           }}
+          onMouseEnter={(e) => buttonHoverStyle(e, true)}
+          onMouseLeave={(e) => buttonHoverStyle(e, false)}
         >
           {isSaytEnabled ? "Keela SAYT" : "Luba SAYT"}
         </button>
@@ -141,6 +151,15 @@ function App() {
                   width: "100%",
                   cursor: "pointer",
                   borderRadius: "8px",
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                  e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
                 onClick={() => openModal(index)}
               />
@@ -222,6 +241,16 @@ function App() {
                   style={{
                     width: "100%",
                     borderRadius: "8px",
+                    transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.05)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 15px rgba(0,0,0,0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.boxShadow = "none";
                   }}
                 />
               ) : (
@@ -241,39 +270,39 @@ function App() {
               )}
 
               {/* Navigeerimis- ja sulgenupud posterist all */}
-              <button
-                onClick={prevMovie}
-                disabled={selectedIndex === 0}
-                style={{
-                  width: "100%",
-                  padding: "5px 10px",
-                  cursor: selectedIndex === 0 ? "not-allowed" : "pointer",
-                  opacity: selectedIndex === 0 ? 0.5 : 1,
-                }}
-              >
-                ⬅ Eelmine
-              </button>
-              <button
-                onClick={nextMovie}
-                disabled={selectedIndex === movies.length - 1}
-                style={{
-                  width: "100%",
-                  padding: "5px 10px",
-                  cursor:
-                    selectedIndex === movies.length - 1
-                      ? "not-allowed"
-                      : "pointer",
-                  opacity: selectedIndex === movies.length - 1 ? 0.5 : 1,
-                }}
-              >
-                Järgmine ➡
-              </button>
-              <button
-                onClick={closeModal}
-                style={{ width: "100%", padding: "5px 10px" }}
-              >
-                Sulge
-              </button>
+              {["prevMovie", "nextMovie", "closeModal"].map((btn, i) => {
+                let label, onClick, disabled = false;
+                if (btn === "prevMovie") {
+                  label = "⬅ Eelmine";
+                  onClick = prevMovie;
+                  disabled = selectedIndex === 0;
+                } else if (btn === "nextMovie") {
+                  label = "Järgmine ➡";
+                  onClick = nextMovie;
+                  disabled = selectedIndex === movies.length - 1;
+                } else {
+                  label = "Sulge";
+                  onClick = closeModal;
+                }
+                return (
+                  <button
+                    key={i}
+                    onClick={onClick}
+                    disabled={disabled}
+                    style={{
+                      width: "100%",
+                      padding: "5px 10px",
+                      cursor: disabled ? "not-allowed" : "pointer",
+                      opacity: disabled ? 0.5 : 1,
+                      transition: "filter 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => !disabled && buttonHoverStyle(e, true)}
+                    onMouseLeave={(e) => buttonHoverStyle(e, false)}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Tekst paremal */}
