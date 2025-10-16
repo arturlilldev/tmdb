@@ -33,23 +33,31 @@ function App() {
     }
   }, [query, isSaytEnabled]);
 
+  // -----------------------
+  // Neurotõlge integratsioon
+  // -----------------------
   const translateText = async (text) => {
     if (!text) {
       setTranslation("");
       return;
     }
 
-    const limitedText = text.length > 500 ? text.slice(0, 500-3) + "..." : text;
+    const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
 
     try {
-      const res = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-          limitedText
-        )}&langpair=en|et`
-      );
-      const data = await res.json();
-      setTranslation(data.responseData.translatedText || "Tõlge puudub");
-    } catch {
+      const response = await fetch("https://neurotolge.ee/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: limitedText,
+          source_lang: "en",
+          target_lang: "et",
+        }),
+      });
+      const data = await response.json();
+      setTranslation(data.translation || "Tõlge puudub");
+    } catch (error) {
+      console.error("Tõlkimine ebaõnnestus:", error);
       setTranslation("Tõlge ebaõnnestus");
     }
   };
@@ -85,7 +93,6 @@ function App() {
 
   const selectedMovie = selectedIndex !== null ? movies[selectedIndex] : null;
 
-  // Funktsioon nupu hover efektiks
   const buttonHoverStyle = (e, enter) => {
     e.currentTarget.style.filter = enter ? "brightness(0.9)" : "brightness(1)";
   };
@@ -155,7 +162,8 @@ function App() {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "scale(1.05)";
-                  e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 15px rgba(0,0,0,0.3)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "scale(1)";
