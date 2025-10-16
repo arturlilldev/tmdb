@@ -34,7 +34,7 @@ function App() {
   }, [query, isSaytEnabled]);
 
   // -----------------------
-  // LibreTranslate integratsioon
+  // LibreTranslate + AllOrigins
   // -----------------------
   const translateText = async (text) => {
     if (!text) {
@@ -43,18 +43,23 @@ function App() {
     }
 
     const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
+    setTranslation("Tõlkimine käib...");
 
     try {
-      const response = await fetch("https://libretranslate.com/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          q: limitedText,
-          source: "en",
-          target: "et",
-          format: "text",
-        }),
-      });
+      const url = "https://libretranslate.com/translate";
+      const response = await fetch(
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            q: limitedText,
+            source: "en",
+            target: "et",
+            format: "text",
+          }),
+        }
+      );
       const data = await response.json();
       setTranslation(data.translatedText || "Tõlge puudub");
     } catch (error) {
@@ -232,7 +237,6 @@ function App() {
               padding: "20px",
             }}
           >
-            {/* Poster ja nupud ühes veerus */}
             <div
               style={{
                 flex: "0 0 240px",
@@ -278,7 +282,6 @@ function App() {
                 </div>
               )}
 
-              {/* Navigeerimis- ja sulgenupud posterist all */}
               {["prevMovie", "nextMovie", "closeModal"].map((btn, i) => {
                 let label, onClick, disabled = false;
                 if (btn === "prevMovie") {
@@ -305,8 +308,12 @@ function App() {
                       opacity: disabled ? 0.5 : 1,
                       transition: "filter 0.2s ease",
                     }}
-                    onMouseEnter={(e) => !disabled && buttonHoverStyle(e, true)}
-                    onMouseLeave={(e) => buttonHoverStyle(e, false)}
+                    onMouseEnter={(e) =>
+                      !disabled && (e.currentTarget.style.filter = "brightness(0.9)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.filter = "brightness(1)")
+                    }
                   >
                     {label}
                   </button>
@@ -314,7 +321,6 @@ function App() {
               })}
             </div>
 
-            {/* Tekst paremal */}
             <div style={{ flex: 1 }}>
               <h2>{selectedMovie.title}</h2>
               <p>{selectedMovie.overview || "(Kirjeldus puudub)"}</p>
