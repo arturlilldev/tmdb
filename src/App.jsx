@@ -38,10 +38,14 @@ function App() {
       setTranslation("");
       return;
     }
+
+    // Piira teksti pikkust, et vältida API vea
+    const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
+
     try {
       const res = await fetch(
         `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-          text
+          limitedText
         )}&langpair=en|et`
       );
       const data = await res.json();
