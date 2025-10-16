@@ -39,8 +39,8 @@ function App() {
       return;
     }
 
-    // Piira teksti pikkust, et vältida API vea
-    const limitedText = text.length >= 500 ? text.slice(0, 500) + "..." : text;
+    // Piira teksti kuni 500 tähemärgi
+    const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
 
     try {
       const res = await fetch(
