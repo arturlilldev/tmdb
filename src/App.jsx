@@ -34,7 +34,7 @@ function App() {
   }, [query, isSaytEnabled]);
 
   // -----------------------
-  // LibreTranslate + AllOrigins
+  // MyMemory + CORS-proxy
   // -----------------------
   const translateText = async (text) => {
     if (!text) {
@@ -42,26 +42,18 @@ function App() {
       return;
     }
 
-    const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
+    const limitedText = text.length > 500 ? text.slice(0, 500-3) + "..." : text;
     setTranslation("Tõlkimine käib...");
 
     try {
-      const url = "https://libretranslate.com/translate";
-      const response = await fetch(
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            q: limitedText,
-            source: "en",
-            target: "et",
-            format: "text",
-          }),
-        }
-      );
+      const url = `https://corsproxy.io/?https://api.mymemory.translated.net/get?q=${encodeURIComponent(
+        limitedText
+      )}&langpair=en|et`;
+
+      const response = await fetch(url);
       const data = await response.json();
-      setTranslation(data.translatedText || "Tõlge puudub");
+
+      setTranslation(data.responseData.translatedText || "Tõlge puudub");
     } catch (error) {
       console.error("Tõlkimine ebaõnnestus:", error);
       setTranslation("Tõlge ebaõnnestus");
