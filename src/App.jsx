@@ -1,0 +1,289 @@
+import { useEffect, useState } from "react";
+
+function App() {
+  const [query, setQuery] = useState("");
+  const [movies, setMovies] = useState([]);
+  const [isSaytEnabled, setIsSaytEnabled] = useState(true);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [translation, setTranslation] = useState("");
+
+  const API_KEY = "4dfb1ff22b81c9dd5b003143fc0e8246";
+
+  const searchMovies = async (searchText) => {
+    if (searchText.trim().length < 3) return;
+    try {
+      const res = await fetch(
+        `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=en-US&query=${encodeURIComponent(
+          searchText
+        )}&page=1&include_adult=false`
+      );
+      const data = await res.json();
+      setMovies(data.results || []);
+    } catch (err) {
+      console.error("Viga andmete laadimisel:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isSaytEnabled && query.length >= 3) {
+      const timeout = setTimeout(() => {
+        searchMovies(query);
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [query, isSaytEnabled]);
+
+  const translateText = async (text) => {
+    if (!text) {
+      setTranslation("");
+      return;
+    }
+    try {
+      const res = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
+          text
+        )}&langpair=en|et`
+      );
+      const data = await res.json();
+      setTranslation(data.responseData.translatedText || "Tõlge puudub");
+    } catch {
+      setTranslation("Tõlge ebaõnnestus");
+    }
+  };
+
+  const openModal = (index) => {
+    setSelectedIndex(index);
+    const movie = movies[index];
+    if (movie.overview) translateText(movie.overview);
+  };
+
+  const closeModal = () => {
+    setSelectedIndex(null);
+    setTranslation("");
+  };
+
+  const prevMovie = () => {
+    if (selectedIndex > 0) {
+      const newIndex = selectedIndex - 1;
+      setSelectedIndex(newIndex);
+      const movie = movies[newIndex];
+      if (movie.overview) translateText(movie.overview);
+    }
+  };
+
+  const nextMovie = () => {
+    if (selectedIndex < movies.length - 1) {
+      const newIndex = selectedIndex + 1;
+      setSelectedIndex(newIndex);
+      const movie = movies[newIndex];
+      if (movie.overview) translateText(movie.overview);
+    }
+  };
+
+  const selectedMovie = selectedIndex !== null ? movies[selectedIndex] : null;
+
+  return (
+    <div style={{ fontFamily: "Arial, sans-serif", padding: "20px" }}>
+      <h2>
+        Sisesta otsitava pealkirja algus (vähemalt 3 tähemärki):
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{ marginLeft: "10px", padding: "5px", width: "250px" }}
+        />
+        <button
+          onClick={() => searchMovies(query)}
+          disabled={isSaytEnabled}
+          style={{
+            marginLeft: "10px",
+            padding: "5px 10px",
+            cursor: isSaytEnabled ? "not-allowed" : "pointer",
+            opacity: isSaytEnabled ? 0.5 : 1,
+          }}
+        >
+          Otsi
+        </button>
+        <button
+          onClick={() => setIsSaytEnabled(!isSaytEnabled)}
+          style={{
+            marginLeft: "10px",
+            padding: "5px 10px",
+            backgroundColor: isSaytEnabled ? "#f88" : "#8f8",
+          }}
+        >
+          {isSaytEnabled ? "Keela SAYT" : "Luba SAYT"}
+        </button>
+      </h2>
+
+      {movies.length === 0 && query.length >= 3 && <p>Ei leitud tulemusi...</p>}
+
+      {movies.map((movie, index) => (
+        <div
+          key={movie.id}
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            borderBottom: "1px solid #ddd",
+            padding: "10px 0",
+          }}
+        >
+          <div style={{ width: "150px", marginRight: "15px" }}>
+            {movie.poster_path ? (
+              <img
+                src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
+                alt={movie.title}
+                style={{
+                  width: "100%",
+                  cursor: "pointer",
+                  borderRadius: "8px",
+                }}
+                onClick={() => openModal(index)}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: "225px",
+                  background: "#eee",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "8px",
+                }}
+              >
+                Pole pilti
+              </div>
+            )}
+          </div>
+          <div style={{ flex: "1" }}>
+            <h3>{movie.title}</h3>
+            <p>
+              {movie.overview || "(Kirjeldus puudub)"}
+              <br />
+              <em style={{ color: "#555" }}>
+                (Tõlge eesti keelde avaneb, kui klõpsad postril)
+              </em>
+            </p>
+          </div>
+        </div>
+      ))}
+
+      {selectedMovie && (
+        <div
+          onClick={closeModal}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+            padding: "10px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              width: "min(90%, 900px)",
+              maxHeight: "90%",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: window.innerWidth < 600 ? "column" : "row",
+              gap: "20px",
+              padding: "20px",
+            }}
+          >
+            {/* Poster ja nupud ühes veerus */}
+            <div
+              style={{
+                flex: "0 0 240px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: window.innerWidth < 600 ? "10px" : "0",
+              }}
+            >
+              {selectedMovie.poster_path ? (
+                <img
+                  src={`https://image.tmdb.org/t/p/w200${selectedMovie.poster_path}`}
+                  alt={selectedMovie.title}
+                  style={{
+                    width: "100%",
+                    borderRadius: "8px",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "360px",
+                    background: "#eee",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "8px",
+                  }}
+                >
+                  Pole pilti
+                </div>
+              )}
+
+              {/* Navigeerimis- ja sulgenupud posterist all */}
+              <button
+                onClick={prevMovie}
+                disabled={selectedIndex === 0}
+                style={{
+                  width: "100%",
+                  padding: "5px 10px",
+                  cursor: selectedIndex === 0 ? "not-allowed" : "pointer",
+                  opacity: selectedIndex === 0 ? 0.5 : 1,
+                }}
+              >
+                ⬅ Eelmine
+              </button>
+              <button
+                onClick={nextMovie}
+                disabled={selectedIndex === movies.length - 1}
+                style={{
+                  width: "100%",
+                  padding: "5px 10px",
+                  cursor:
+                    selectedIndex === movies.length - 1
+                      ? "not-allowed"
+                      : "pointer",
+                  opacity: selectedIndex === movies.length - 1 ? 0.5 : 1,
+                }}
+              >
+                Järgmine ➡
+              </button>
+              <button
+                onClick={closeModal}
+                style={{ width: "100%", padding: "5px 10px" }}
+              >
+                Sulge
+              </button>
+            </div>
+
+            {/* Tekst paremal */}
+            <div style={{ flex: 1 }}>
+              <h2>{selectedMovie.title}</h2>
+              <p>{selectedMovie.overview || "(Kirjeldus puudub)"}</p>
+              <hr />
+              <p style={{ fontStyle: "italic", color: "#333" }}>{translation}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
