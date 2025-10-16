@@ -39,7 +39,7 @@ function App() {
       return;
     }
 
-    const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
+    const limitedText = text.length > 500 ? text.slice(0, 500-3) + "..." : text;
 
     try {
       const res = await fetch(
