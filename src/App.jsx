@@ -34,7 +34,7 @@ function App() {
   }, [query, isSaytEnabled]);
 
   // -----------------------
-  // Neurotõlge integratsioon
+  // LibreTranslate integratsioon
   // -----------------------
   const translateText = async (text) => {
     if (!text) {
@@ -45,17 +45,18 @@ function App() {
     const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
 
     try {
-      const response = await fetch("https://neurotolge.ee/api/translate", {
+      const response = await fetch("https://libretranslate.com/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: limitedText,
-          source_lang: "en",
-          target_lang: "et",
+          q: limitedText,
+          source: "en",
+          target: "et",
+          format: "text",
         }),
       });
       const data = await response.json();
-      setTranslation(data.translation || "Tõlge puudub");
+      setTranslation(data.translatedText || "Tõlge puudub");
     } catch (error) {
       console.error("Tõlkimine ebaõnnestus:", error);
       setTranslation("Tõlge ebaõnnestus");
