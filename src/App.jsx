@@ -40,7 +40,7 @@ function App() {
     }
 
     // Piira teksti pikkust, et vältida API vea
-    const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
+    const limitedText = text.length >= 500 ? text.slice(0, 500) + "..." : text;
 
     try {
       const res = await fetch(
