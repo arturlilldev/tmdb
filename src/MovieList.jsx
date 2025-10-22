@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 const API_KEY = "4dfb1ff22b81c9dd5b003143fc0e8246";
 const BASE_URL = "https://api.themoviedb.org/3/search/movie";
-const IMAGE_BASE = "https://image.tmdb.org/t/p/w200";
+const IMAGE_BASE = "https://image.tmdb.org/t/p/w400";
 
 export default function MovieList({ setMovies, onOpenModal }) {
   const [query, setQuery] = useState("");
