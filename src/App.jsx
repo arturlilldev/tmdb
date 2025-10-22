@@ -3,39 +3,47 @@ import { useEffect, useState } from "react";
 function App() {
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [isSaytEnabled, setIsSaytEnabled] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [translation, setTranslation] = useState("");
 
   const API_KEY = "4dfb1ff22b81c9dd5b003143fc0e8246";
 
-  const searchMovies = async (searchText) => {
+  const searchMovies = async (searchText, pageNumber = 1, append = false) => {
     if (searchText.trim().length < 3) return;
     try {
       const res = await fetch(
         `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=en-US&query=${encodeURIComponent(
           searchText
-        )}&page=1&include_adult=false`
+        )}&page=${pageNumber}&include_adult=false`
       );
       const data = await res.json();
-      setMovies(data.results || []);
+      setHasMore(pageNumber < data.total_pages);
+      setPage(pageNumber);
+      if (append) setMovies((prev) => [...prev, ...(data.results || [])]);
+      else setMovies(data.results || []);
     } catch (err) {
       console.error("Viga andmete laadimisel:", err);
     }
   };
 
+  const loadMore = () => {
+    const nextPage = page + 1;
+    searchMovies(query, nextPage, true);
+  };
+
   useEffect(() => {
     if (isSaytEnabled && query.length >= 3) {
       const timeout = setTimeout(() => {
-        searchMovies(query);
+        searchMovies(query, 1);
       }, 500);
       return () => clearTimeout(timeout);
     }
   }, [query, isSaytEnabled]);
 
-  // -----------------------
-  // MyMemory + CORS-proxy
-  // -----------------------
+  // ---- Tõlkimine MyMemory + CORS proxy ----
   const translateText = async (text) => {
     if (!text) {
       setTranslation("");
@@ -52,7 +60,6 @@ function App() {
 
       const response = await fetch(url);
       const data = await response.json();
-
       setTranslation(data.responseData.translatedText || "Tõlge puudub");
     } catch (error) {
       console.error("Tõlkimine ebaõnnestus:", error);
@@ -198,6 +205,29 @@ function App() {
         </div>
       ))}
 
+      {/* 🔽 "Lae juurde" nupp */}
+      {hasMore && movies.length > 0 && (
+        <div style={{ textAlign: "center", marginTop: "15px" }}>
+          <button
+            onClick={loadMore}
+            style={{
+              padding: "8px 16px",
+              fontSize: "16px",
+              borderRadius: "6px",
+              border: "1px solid #ccc",
+              backgroundColor: "#f0f0f0",
+              cursor: "pointer",
+              transition: "transform 0.2s ease, filter 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(0.9)")}
+            onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
+          >
+            Lae juurde ⬇
+          </button>
+        </div>
+      )}
+
+      {/* 🔳 Modal */}
       {selectedMovie && (
         <div
           onClick={closeModal}
@@ -224,7 +254,7 @@ function App() {
               maxHeight: "90%",
               overflowY: "auto",
               display: "flex",
-              flexDirection: window.innerWidth < 600 ? "column" : "row",
+              flexDirection: "row",
               gap: "20px",
               padding: "20px",
             }}
@@ -236,12 +266,11 @@ function App() {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: "10px",
-                marginBottom: window.innerWidth < 600 ? "10px" : "0",
               }}
             >
               {selectedMovie.poster_path ? (
                 <img
-                  src={`https://image.tmdb.org/t/p/w200${selectedMovie.poster_path}`}
+                  src={`https://image.tmdb.org/t/p/w400${selectedMovie.poster_path}`}
                   alt={selectedMovie.title}
                   style={{
                     width: "100%",
@@ -274,43 +303,40 @@ function App() {
                 </div>
               )}
 
-              {["prevMovie", "nextMovie", "closeModal"].map((btn, i) => {
-                let label, onClick, disabled = false;
-                if (btn === "prevMovie") {
-                  label = "⬅ Eelmine";
-                  onClick = prevMovie;
-                  disabled = selectedIndex === 0;
-                } else if (btn === "nextMovie") {
-                  label = "Järgmine ➡";
-                  onClick = nextMovie;
-                  disabled = selectedIndex === movies.length - 1;
-                } else {
-                  label = "Sulge";
-                  onClick = closeModal;
-                }
-                return (
-                  <button
-                    key={i}
-                    onClick={onClick}
-                    disabled={disabled}
-                    style={{
-                      width: "100%",
-                      padding: "5px 10px",
-                      cursor: disabled ? "not-allowed" : "pointer",
-                      opacity: disabled ? 0.5 : 1,
-                      transition: "filter 0.2s ease",
-                    }}
-                    onMouseEnter={(e) =>
-                      !disabled && (e.currentTarget.style.filter = "brightness(0.9)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.filter = "brightness(1)")
-                    }
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+              <div style={{ width: "100%" }}>
+                <button
+                  onClick={prevMovie}
+                  disabled={selectedIndex === 0}
+                  style={{
+                    width: "32%",
+                    marginRight: "2%",
+                    padding: "6px",
+                    cursor: selectedIndex === 0 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  ⬅ Eelmine
+                </button>
+                <button
+                  onClick={closeModal}
+                  style={{ width: "32%", marginRight: "2%", padding: "6px" }}
+                >
+                  Sulge
+                </button>
+                <button
+                  onClick={nextMovie}
+                  disabled={selectedIndex === movies.length - 1}
+                  style={{
+                    width: "32%",
+                    padding: "6px",
+                    cursor:
+                      selectedIndex === movies.length - 1
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  Järgmine ➡
+                </button>
+              </div>
             </div>
 
             <div style={{ flex: 1 }}>
