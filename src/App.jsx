@@ -1,10 +1,9 @@
-// App.jsx
 import React, { useState } from "react";
 import MovieList from "./MovieList";
 import Modal from "./Modal";
 
 export default function App() {
-  const [movies, setMovies] = useState([]); // alguses tühi massiiv — ei tohi olla undefined
+  const [movies, setMovies] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(null);
 
   const openModal = (index) => {
@@ -16,23 +15,17 @@ export default function App() {
   const closeModal = () => setSelectedIndex(null);
 
   const showPrevious = () => {
-    if (!Array.isArray(movies) || selectedIndex == null) return;
     if (selectedIndex > 0) setSelectedIndex((i) => i - 1);
   };
 
   const showNext = () => {
-    if (!Array.isArray(movies) || selectedIndex == null) return;
     if (selectedIndex < movies.length - 1) setSelectedIndex((i) => i + 1);
   };
 
   return (
     <div style={{ fontFamily: "Arial, sans-serif", padding: 20 }}>
       <h1>Filmiotsing</h1>
-
-      {/* MovieList vastutab otsingu, päringu ja setMovies kutsumise eest */}
       <MovieList setMovies={setMovies} onOpenModal={openModal} />
-
-      {/* Modal avaneb ainult, kui selectedIndex on number */}
       {selectedIndex !== null && Array.isArray(movies) && movies[selectedIndex] && (
         <Modal
           movie={movies[selectedIndex]}

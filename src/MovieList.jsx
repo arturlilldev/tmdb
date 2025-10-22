@@ -1,4 +1,3 @@
-// MovieList.jsx
 import React, { useEffect, useState } from "react";
 
 const API_KEY = "4dfb1ff22b81c9dd5b003143fc0e8246";
@@ -7,17 +6,15 @@ const IMAGE_BASE = "https://image.tmdb.org/t/p/w200";
 
 export default function MovieList({ setMovies, onOpenModal }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]); // sisemine koopia
+  const [results, setResults] = useState([]);
   const [page, setPage] = useState(1);
   const [isSaytEnabled, setIsSaytEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  // fetchMovies tagab, et setMovies kutsutakse alati massiiviga
   const fetchMovies = async (search, pageNum = 1, append = false) => {
     if (!search || search.trim().length < 3) {
-      // tühjenda tulemused, kui otsing liiga lühike
       setResults([]);
-      setMovies([]); // säilitame, et parent ei jääks undefined'iks
+      setMovies([]);
       setPage(1);
       return;
     }
@@ -29,37 +26,28 @@ export default function MovieList({ setMovies, onOpenModal }) {
           search
         )}&page=${pageNum}&include_adult=false`
       );
-      if (!res.ok) throw new Error("TMDB fetch failed: " + res.status);
       const data = await res.json();
       const newResults = Array.isArray(data.results) ? data.results : [];
       const all = append ? [...results, ...newResults] : newResults;
       setResults(all);
-      setMovies(all); // alati massiiv
+      setMovies(all);
       setPage(pageNum);
     } catch (err) {
       console.error("TMDB fetch error:", err);
-      // vea korral jäta results samaks, kuid garanteeri parent massiiv
       setMovies(results || []);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // SAYT
   useEffect(() => {
     if (isSaytEnabled && query.length >= 3) {
       const to = setTimeout(() => fetchMovies(query, 1), 500);
       return () => clearTimeout(to);
     }
-    if (!isSaytEnabled) {
-      // kui SAYT välja, ei tee automaatselt päringut
-      return;
-    }
   }, [query, isSaytEnabled]);
 
-  const loadMore = () => {
-    fetchMovies(query, page + 1, true);
-  };
+  const loadMore = () => fetchMovies(query, page + 1, true);
 
   return (
     <div>
@@ -100,7 +88,7 @@ export default function MovieList({ setMovies, onOpenModal }) {
               cursor: "pointer",
               alignItems: "flex-start",
             }}
-            onClick={() => onOpenModal(idx)} // edastame indeksi
+            onClick={() => onOpenModal(idx)}
           >
             {movie.poster_path ? (
               <img
@@ -111,16 +99,10 @@ export default function MovieList({ setMovies, onOpenModal }) {
                   height: 180,
                   objectFit: "cover",
                   borderRadius: 6,
-                  transition: "transform .2s, box-shadow .2s",
+                  transition: "transform .2s",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.03)";
-                  e.currentTarget.style.boxShadow = "0 6px 18px rgba(0,0,0,0.12)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
               />
             ) : (
               <div
