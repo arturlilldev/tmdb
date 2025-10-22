@@ -1,39 +1,16 @@
-import { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 
-export default function Modal({ movies, selectedIndex, onClose, onChangeIndex }) {
-  const movie = movies[selectedIndex];
-  const [translation, setTranslation] = useState("");
+function Modal({ movie, onClose, onPrev, onNext, hasPrev, hasNext }) {
+  const IMAGE_BASE = "https://image.tmdb.org/t/p/w400";
 
+  // ESC klahv sulgeb modali
   useEffect(() => {
-    if (movie?.overview) translateText(movie.overview);
-  }, [movie]);
-
-  const translateText = async (text) => {
-    if (!text) {
-      setTranslation("");
-      return;
-    }
-    const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
-    setTranslation("Tõlkimine käib...");
-    try {
-      const url = `https://corsproxy.io/?https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-        limitedText
-      )}&langpair=en|et`;
-      const response = await fetch(url);
-      const data = await response.json();
-      setTranslation(data.responseData.translatedText || "Tõlge puudub");
-    } catch {
-      setTranslation("Tõlge ebaõnnestus");
-    }
-  };
-
-  const prevMovie = () => {
-    if (selectedIndex > 0) onChangeIndex(selectedIndex - 1);
-  };
-
-  const nextMovie = () => {
-    if (selectedIndex < movies.length - 1) onChangeIndex(selectedIndex + 1);
-  };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   if (!movie) return null;
 
@@ -46,84 +23,37 @@ export default function Modal({ movies, selectedIndex, onClose, onChangeIndex })
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
         display: "flex",
-        justifyContent: "center",
         alignItems: "center",
+        justifyContent: "center",
         zIndex: 1000,
-        padding: "10px",
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "white",
+          backgroundColor: "white",
           borderRadius: "12px",
-          width: "min(90%, 900px)",
-          maxHeight: "90%",
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "row",
-          gap: "20px",
           padding: "20px",
+          width: "min(90%, 800px)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          textAlign: "center",
+          boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
         }}
       >
-        <div style={{ flex: "0 0 240px", textAlign: "center" }}>
-          {movie.poster_path ? (
-            <img
-              src={`https://image.tmdb.org/t/p/w400${movie.poster_path}`}
-              alt={movie.title}
-              style={{
-                width: "100%",
-                borderRadius: "8px",
-                transition: "transform 0.3s ease",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.transform = "scale(1.05)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.transform = "scale(1)")
-              }
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "360px",
-                background: "#eee",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "8px",
-              }}
-            >
-              Pole pilti
-            </div>
-          )}
+        <h2 style={{ marginBottom: "10px" }}>{movie.title}</h2>
 
-          <div style={{ marginTop: "10px" }}>
-            <button onClick={prevMovie} disabled={selectedIndex === 0}>
-              ⬅ Eelmine
-            </button>
-            <button onClick={onClose} style={{ margin: "0 5px" }}>
-              Sulge
-            </button>
-            <button
-              onClick={nextMovie}
-              disabled={selectedIndex === movies.length - 1}
-            >
-              Järgmine ➡
-            </button>
-          </div>
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <h2>{movie.title}</h2>
-          <p>{movie.overview || "(Kirjeldus puudub)"}</p>
-          <hr />
-          <p style={{ fontStyle: "italic", color: "#333" }}>{translation}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+        {movie.poster_path ? (
+          <img
+            src={`${IMAGE_BASE}${movie.poster_path}`}
+            alt={movie.title}
+            style={{
+              width: "400px",
+              height: "600px",
+              objectFit: "cover",
+              borderRadius: "10px",
+              transition: "transform 0.2s ease-in-out",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "sc

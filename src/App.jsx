@@ -5,22 +5,19 @@ import Modal from "./Modal";
 function App() {
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [modalIndex, setModalIndex] = useState(0);
-  const [movies, setMovies] = useState([]);
+  const [movies, setMovies] = useState([]); // algväärtus on alati tühi massiiv
 
-  // Avab modali ja salvestab indeksi
   const openModal = (movie, index) => {
-    setSelectedMovie(movie);
-    setModalIndex(index);
+    setSelectedMovie(movie || null);
+    setModalIndex(index ?? 0);
   };
 
-  // Sulgeb modali
   const closeModal = () => {
     setSelectedMovie(null);
   };
 
-  // Liikumine eelmisele/ järgmisele filmile
   const showPrevious = () => {
-    if (modalIndex > 0) {
+    if (Array.isArray(movies) && modalIndex > 0) {
       const newIndex = modalIndex - 1;
       setModalIndex(newIndex);
       setSelectedMovie(movies[newIndex]);
@@ -28,7 +25,7 @@ function App() {
   };
 
   const showNext = () => {
-    if (modalIndex < movies.length - 1) {
+    if (Array.isArray(movies) && modalIndex < movies.length - 1) {
       const newIndex = modalIndex + 1;
       setModalIndex(newIndex);
       setSelectedMovie(movies[newIndex]);
@@ -41,11 +38,11 @@ function App() {
         Sisesta otsitava pealkirja algus (vähemalt 3 tähemärki):
       </h2>
 
-      {/* MovieList vastutab otsingute ja andmete toomise eest */}
+      {/* MovieList vastutab andmete laadimise eest */}
       <MovieList onOpenModal={openModal} setMovies={setMovies} />
 
-      {/* Modal avaneb, kui film on valitud */}
-      {selectedMovie && (
+      {/* Modal avaneb ainult siis, kui film on valitud */}
+      {selectedMovie && Array.isArray(movies) && (
         <Modal
           movie={selectedMovie}
           onClose={closeModal}
