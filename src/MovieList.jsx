@@ -1,20 +1,27 @@
-import React, { useState, useEffect } from "react";
+// MovieList.jsx
+import React, { useEffect, useState } from "react";
 
 const API_KEY = "4dfb1ff22b81c9dd5b003143fc0e8246";
 const BASE_URL = "https://api.themoviedb.org/3/search/movie";
 const IMAGE_BASE = "https://image.tmdb.org/t/p/w200";
 
-function MovieList({ onOpenModal, setMovies }) {
+export default function MovieList({ setMovies, onOpenModal }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState([]); // sisemine koopia
   const [page, setPage] = useState(1);
   const [isSaytEnabled, setIsSaytEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [translationCache, setTranslationCache] = useState({});
 
-  // --- Päring TMDB API-st ---
+  // fetchMovies tagab, et setMovies kutsutakse alati massiiviga
   const fetchMovies = async (search, pageNum = 1, append = false) => {
-    if (!search || search.length < 3) return;
+    if (!search || search.trim().length < 3) {
+      // tühjenda tulemused, kui otsing liiga lühike
+      setResults([]);
+      setMovies([]); // säilitame, et parent ei jääks undefined'iks
+      setPage(1);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await fetch(
@@ -22,198 +29,127 @@ function MovieList({ onOpenModal, setMovies }) {
           search
         )}&page=${pageNum}&include_adult=false`
       );
+      if (!res.ok) throw new Error("TMDB fetch failed: " + res.status);
       const data = await res.json();
-      const newResults = data.results || [];
-      const allResults = append ? [...results, ...newResults] : newResults;
-
-      setResults(allResults);
-      setMovies(allResults);
+      const newResults = Array.isArray(data.results) ? data.results : [];
+      const all = append ? [...results, ...newResults] : newResults;
+      setResults(all);
+      setMovies(all); // alati massiiv
+      setPage(pageNum);
     } catch (err) {
       console.error("TMDB fetch error:", err);
+      // vea korral jäta results samaks, kuid garanteeri parent massiiv
+      setMovies(results || []);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- SAyT (Search-as-you-type) ---
+  // SAYT
   useEffect(() => {
     if (isSaytEnabled && query.length >= 3) {
-      const delay = setTimeout(() => fetchMovies(query), 500);
-      return () => clearTimeout(delay);
+      const to = setTimeout(() => fetchMovies(query, 1), 500);
+      return () => clearTimeout(to);
+    }
+    if (!isSaytEnabled) {
+      // kui SAYT välja, ei tee automaatselt päringut
+      return;
     }
   }, [query, isSaytEnabled]);
 
-  // --- Tõlge (kasutades AllOrigins + LibreTranslate) ---
-  const translateText = async (text) => {
-    if (!text) return "Tõlge puudub";
-    if (translationCache[text]) return translationCache[text];
-
-    const limitedText = text.length > 500 ? text.slice(0, 500) + "..." : text;
-
-    try {
-      const res = await fetch(
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(
-          "https://libretranslate.com/translate"
-        )}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            q: limitedText,
-            source: "en",
-            target: "et",
-            format: "text",
-          }),
-        }
-      );
-      const data = await res.json();
-      const translated = data.translatedText || "Tõlge puudub";
-      setTranslationCache((prev) => ({ ...prev, [text]: translated }));
-      return translated;
-    } catch (err) {
-      console.error("Tõlkimine ebaõnnestus:", err);
-      return "Tõlge ebaõnnestus";
-    }
-  };
-
-  // --- „Lae juurde” (järgmine leht) ---
   const loadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchMovies(query, nextPage, true);
+    fetchMovies(query, page + 1, true);
   };
 
   return (
     <div>
-      <div style={{ marginBottom: "20px" }}>
+      <div style={{ marginBottom: 16 }}>
         <input
-          type="text"
-          placeholder="Sisesta otsitava filmi pealkiri..."
           value={query}
+          placeholder="Sisesta pealkirja algus (min 3 tähemärki)"
           onChange={(e) => setQuery(e.target.value)}
-          style={{ padding: "10px", width: "250px" }}
+          style={{ padding: 8, width: 300 }}
         />
         <button
-          onClick={() => fetchMovies(query)}
+          onClick={() => fetchMovies(query, 1)}
           disabled={isSaytEnabled || query.length < 3}
-          style={{
-            padding: "10px",
-            marginLeft: "10px",
-            cursor: isSaytEnabled ? "not-allowed" : "pointer",
-          }}
+          style={{ marginLeft: 8, padding: "8px 12px" }}
         >
           Otsi
         </button>
         <button
-          onClick={() => setIsSaytEnabled(!isSaytEnabled)}
-          style={{
-            padding: "10px",
-            marginLeft: "10px",
-            cursor: "pointer",
-          }}
+          onClick={() => setIsSaytEnabled((v) => !v)}
+          style={{ marginLeft: 8, padding: "8px 12px" }}
         >
-          {isSaytEnabled ? "Keela SAyT" : "Luba SAyT"}
+          {isSaytEnabled ? "Keela SAYT" : "Luba SAYT"}
         </button>
       </div>
 
-      {isLoading && <p>Laadin andmeid...</p>}
+      {isLoading && <p>Laadin...</p>}
 
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}>
-        {results.map((movie, index) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {results.map((movie, idx) => (
           <div
-            key={movie.id}
-            onClick={() => onOpenModal(movie, index)}
+            key={movie.id ?? idx}
             style={{
               display: "flex",
-              flexDirection: "row",
-              alignItems: "flex-start",
-              backgroundColor: "#fafafa",
-              border: "1px solid #ccc",
-              borderRadius: "10px",
-              margin: "10px",
-              padding: "10px",
-              width: "500px",
+              gap: 12,
+              padding: 12,
+              border: "1px solid #eee",
+              borderRadius: 8,
               cursor: "pointer",
-              transition: "transform 0.2s, box-shadow 0.2s",
+              alignItems: "flex-start",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "scale(1.02)";
-              e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            onClick={() => onOpenModal(idx)} // edastame indeksi
           >
             {movie.poster_path ? (
               <img
                 src={`${IMAGE_BASE}${movie.poster_path}`}
                 alt={movie.title}
                 style={{
-                  width: "100px",
-                  height: "150px",
-                  marginRight: "15px",
-                  borderRadius: "5px",
+                  width: 120,
+                  height: 180,
+                  objectFit: "cover",
+                  borderRadius: 6,
+                  transition: "transform .2s, box-shadow .2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.03)";
+                  e.currentTarget.style.boxShadow = "0 6px 18px rgba(0,0,0,0.12)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               />
             ) : (
               <div
                 style={{
-                  width: "100px",
-                  height: "150px",
-                  marginRight: "15px",
-                  backgroundColor: "#ddd",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: "5px",
+                  width: 120,
+                  height: 180,
+                  background: "#ddd",
+                  borderRadius: 6,
                 }}
-              >
-                No image
-              </div>
+              />
             )}
+
             <div style={{ flex: 1, textAlign: "left" }}>
-              <h3>{movie.title}</h3>
-              <p style={{ fontSize: "14px", color: "#555" }}>{movie.overview}</p>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#333",
-                  fontStyle: "italic",
-                }}
-              >
-                {movie.overview
-                  ? translationCache[movie.overview] || "Tõlgin..."
-                  : ""}
+              <h3 style={{ margin: "0 0 8px 0" }}>{movie.title}</h3>
+              <p style={{ margin: 0, color: "#444" }}>
+                {movie.overview || "(Kirjeldus puudub)"}
               </p>
-              {movie.overview && !translationCache[movie.overview] && (
-                <span style={{ display: "none" }}>
-                  {translateText(movie.overview)}
-                </span>
-              )}
             </div>
           </div>
         ))}
       </div>
 
       {results.length > 0 && (
-        <button
-          onClick={loadMore}
-          style={{
-            marginTop: "20px",
-            padding: "10px 20px",
-            borderRadius: "6px",
-            cursor: "pointer",
-            transition: "transform 0.2s, background-color 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#ddd")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
-        >
-          Lae juurde
-        </button>
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button onClick={loadMore} style={{ padding: "10px 16px" }}>
+            Lae juurde
+          </button>
+        </div>
       )}
     </div>
   );
 }
-
-export default MovieList;

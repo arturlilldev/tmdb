@@ -1,59 +1,48 @@
+// App.jsx
 import React, { useState } from "react";
 import MovieList from "./MovieList";
 import Modal from "./Modal";
 
-function App() {
-  const [selectedMovie, setSelectedMovie] = useState(null);
-  const [modalIndex, setModalIndex] = useState(0);
-  const [movies, setMovies] = useState([]); // algväärtus on alati tühi massiiv
+export default function App() {
+  const [movies, setMovies] = useState([]); // alguses tühi massiiv — ei tohi olla undefined
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
-  const openModal = (movie, index) => {
-    setSelectedMovie(movie || null);
-    setModalIndex(index ?? 0);
+  const openModal = (index) => {
+    if (!Array.isArray(movies) || index == null) return;
+    if (index < 0 || index >= movies.length) return;
+    setSelectedIndex(index);
   };
 
-  const closeModal = () => {
-    setSelectedMovie(null);
-  };
+  const closeModal = () => setSelectedIndex(null);
 
   const showPrevious = () => {
-    if (Array.isArray(movies) && modalIndex > 0) {
-      const newIndex = modalIndex - 1;
-      setModalIndex(newIndex);
-      setSelectedMovie(movies[newIndex]);
-    }
+    if (!Array.isArray(movies) || selectedIndex == null) return;
+    if (selectedIndex > 0) setSelectedIndex((i) => i - 1);
   };
 
   const showNext = () => {
-    if (Array.isArray(movies) && modalIndex < movies.length - 1) {
-      const newIndex = modalIndex + 1;
-      setModalIndex(newIndex);
-      setSelectedMovie(movies[newIndex]);
-    }
+    if (!Array.isArray(movies) || selectedIndex == null) return;
+    if (selectedIndex < movies.length - 1) setSelectedIndex((i) => i + 1);
   };
 
   return (
-    <div className="app-container" style={{ textAlign: "center", padding: "20px" }}>
-      <h2>
-        Sisesta otsitava pealkirja algus (vähemalt 3 tähemärki):
-      </h2>
+    <div style={{ fontFamily: "Arial, sans-serif", padding: 20 }}>
+      <h1>Filmiotsing</h1>
 
-      {/* MovieList vastutab andmete laadimise eest */}
-      <MovieList onOpenModal={openModal} setMovies={setMovies} />
+      {/* MovieList vastutab otsingu, päringu ja setMovies kutsumise eest */}
+      <MovieList setMovies={setMovies} onOpenModal={openModal} />
 
-      {/* Modal avaneb ainult siis, kui film on valitud */}
-      {selectedMovie && Array.isArray(movies) && (
+      {/* Modal avaneb ainult, kui selectedIndex on number */}
+      {selectedIndex !== null && Array.isArray(movies) && movies[selectedIndex] && (
         <Modal
-          movie={selectedMovie}
+          movie={movies[selectedIndex]}
           onClose={closeModal}
           onPrev={showPrevious}
           onNext={showNext}
-          hasPrev={modalIndex > 0}
-          hasNext={modalIndex < movies.length - 1}
+          hasPrev={selectedIndex > 0}
+          hasNext={selectedIndex < movies.length - 1}
         />
       )}
     </div>
   );
 }
-
-export default App;
